@@ -1,0 +1,9 @@
+# OS / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Env files (see each app's .env.example)
+.env
+.env.local
