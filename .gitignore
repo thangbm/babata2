@@ -7,3 +7,6 @@
 # Env files (see each app's .env.example)
 .env
 .env.local
+
+# Claude Code — personal overrides (.claude/ itself is committed)
+.claude/settings.local.json
