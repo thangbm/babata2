@@ -3,8 +3,8 @@
 Monorepo with three independent apps/services:
 
 - **[apps/web](apps/web)** — React + Vite + TypeScript frontend (SPA).
-- **[apps/bff](apps/bff)** — Next.js backend-for-frontend. API routes only (no UI beyond a status page); called by `apps/web` and proxies to `services/ai`.
-- **[services/ai](services/ai)** — Python multi-agent AI service, built with LangGraph and exposed over FastAPI.
+- **[apps/bff](apps/bff)** — NestJS backend-for-frontend. API only (no UI); called by `apps/web` and proxies to `services/brain`.
+- **[services/brain](services/brain)** — Python multi-agent AI service, built with LangGraph and exposed over FastAPI.
 
 Each app manages its own dependencies independently (no workspace tooling linking them).
 
@@ -26,14 +26,13 @@ pnpm dev
 ```sh
 cd apps/bff
 pnpm install
-cp .env.example .env   # set AI_SERVICE_URL
-pnpm dev
+pnpm dev   # AI_SERVICE_URL defaults to http://localhost:8000; set it in the environment to override
 ```
 
-### AI service (`services/ai`)
+### AI service (`services/brain`)
 
 ```sh
-cd services/ai
+cd services/brain
 python -m venv .venv
 ./.venv/Scripts/activate   # or source .venv/bin/activate on macOS/Linux
 pip install -e ".[dev]"
@@ -47,4 +46,4 @@ uvicorn app.main:app --reload
 docker compose up --build
 ```
 
-This starts `web` on [http://localhost:5173](http://localhost:5173), `bff` on [http://localhost:3000](http://localhost:3000), and `ai` on [http://localhost:8000](http://localhost:8000).
+This starts `web` on [http://localhost:5173](http://localhost:5173), `bff` on [http://localhost:3000](http://localhost:3000), and `brain` on [http://localhost:8000](http://localhost:8000).

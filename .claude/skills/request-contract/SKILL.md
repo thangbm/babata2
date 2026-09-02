@@ -20,9 +20,9 @@ Add or update a pytest test in `services/brain/tests/` that asserts the new shap
 
 ## 2. `apps/bff` — forward and validate
 
-The proxy in `apps/bff/app/api/agents/invoke/route.ts` currently forwards the parsed body wholesale, so an added request field may reach the brain service without any code change. That is exactly the risk: an unvalidated field crosses the boundary. Validate the new field in the handler — reject a bad payload with `400` rather than letting the brain service receive it.
+The DTO in `apps/bff/src/agents/dto/invoke-agent.dto.ts` (`InvokeAgentDto`) is what actually gets validated — the global `ValidationPipe` in `src/main.ts` rejects anything that doesn't match it with `400` before `apps/bff/src/agents/agents.controller.ts`/`agents.service.ts` ever forward the request. A new request field needs a matching `class-validator`-decorated property on the DTO, or it's silently stripped (`whitelist: true`) rather than forwarded — decide deliberately whether that's what you want.
 
-For a response change, check whether the handler passes the upstream JSON through untouched or reshapes it, and update the route test in the same directory.
+For a response change, `AgentsService.invoke` currently forwards the upstream JSON body untouched — check whether that's still correct or whether the new field needs shaping, and update `agents.service.spec.ts` / `agents.controller.spec.ts` / `test/agents.e2e-spec.ts` alongside it.
 
 ## 3. `apps/web` — send and consume
 

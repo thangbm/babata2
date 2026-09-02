@@ -46,7 +46,7 @@ pnpm install
 pnpm dev
 ```
 
-It reads `AI_SERVICE_URL` (see `apps/bff/lib/env.ts`), defaulting to `http://localhost:8000` when unset — so the brain service on its default port needs no configuration.
+It reads `AI_SERVICE_URL` via `ConfigService` (see `apps/bff/src/agents/agents.service.ts`), defaulting to `http://localhost:8000` when unset — so the brain service on its default port needs no configuration.
 
 **apps/web**:
 

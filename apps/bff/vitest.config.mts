@@ -1,13 +1,20 @@
+import swc from "unplugin-swc";
 import { defineConfig } from "vitest/config";
-import path from "node:path";
 
 export default defineConfig({
+  plugins: [
+    swc.vite({
+      jsc: {
+        parser: { syntax: "typescript", decorators: true },
+        transform: { legacyDecorator: true, decoratorMetadata: true },
+        target: "es2022",
+      },
+      module: { type: "es6" },
+    }),
+  ],
   test: {
     environment: "node",
-  },
-  resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname, "."),
-    },
+    setupFiles: ["./vitest.setup.ts"],
+    include: ["src/**/*.spec.ts", "test/**/*.e2e-spec.ts"],
   },
 });
