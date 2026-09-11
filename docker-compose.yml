@@ -1,23 +1,62 @@
 services:
   web:
-    build: ./apps/web
+    # Baked into the bundle at build time, so it must resolve from the host
+    # browser — not a compose-internal name like http://bff:3000.
+    build:
+      context: ./apps/web
+      args:
+        VITE_BFF_URL: ${VITE_BFF_URL:-http://localhost:3000}
     ports:
       - "5173:80"
+    # service_started, not service_healthy: nginx serves static files and never
+    # calls the BFF itself — the browser does, at runtime.
     depends_on:
-      - bff
+      bff:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
 
   bff:
     build: ./apps/bff
     ports:
       - "3000:3000"
     environment:
-      AI_SERVICE_URL: http://ai:8000
+      # Must match the compose service name; "ai" was never a real host.
+      AI_SERVICE_URL: http://brain:8000
+      PORT: "3000"
     depends_on:
-      - brain
+      brain:
+        condition: service_healthy
+    # Uses busybox wget — node:22-alpine ships no curl.
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
 
   brain:
     build: ./services/brain
     ports:
       - "8000:8000"
+    # Later entries win, so a real .env overrides .env.example's placeholders.
+    # `required: false` lets the stack start when no .env exists.
     env_file:
-      - ./services/brain/.env.example
+      - path: ./services/brain/.env.example
+        required: true
+      - path: ./services/brain/.env
+        required: false
+    # Uses python, not curl/wget — the Debian-slim base ships neither.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=2)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped

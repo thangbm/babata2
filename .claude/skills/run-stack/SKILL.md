@@ -17,11 +17,34 @@ Each app has its own lockfile and `node_modules`/`.venv` — always `cd` into th
 
 ## Docker: the whole stack at once
 
+Requires **Docker Compose v2.24 or newer** — the compose file uses the long-form `env_file` syntax (`path:` / `required:`), which older CLIs cannot parse. Check with `docker compose version`.
+
 ```sh
 docker compose up --build
 ```
 
-Serves web on `:5173`, bff on `:3000`, brain on `:8000`. Use this when the task is about the three tiers talking to each other. Note that compose passes `services/brain/.env.example` directly as the brain service's `env_file`, so a local `.env` is not picked up there.
+Serves web on `:5173`, bff on `:3000`, brain on `:8000`. Use this when the task is about the three tiers talking to each other.
+
+**How the tiers find each other.** The BFF reaches the brain at `AI_SERVICE_URL=http://brain:8000` — the compose *service name*, resolved by Docker's internal DNS. The browser sits outside that network, so the web bundle is instead built against a host-resolvable URL (see below). Those two facts are why the same URL cannot be used for both.
+
+**Startup order and health.** `bff` waits for `brain` to report healthy (`depends_on: condition: service_healthy`), so it accepts traffic a few seconds after the containers start rather than immediately. `docker compose ps` reports health for all three services. If `brain` never goes healthy, `bff` never starts — that visible failure is intended, and is better than a confusing `502` later.
+
+**Giving the brain a real API key.** Compose loads `services/brain/.env.example` first, then `services/brain/.env` if it exists, and the second wins on any key it defines. So to supply a real `ANTHROPIC_API_KEY`, create `services/brain/.env` (git-ignored) — no compose edit required:
+
+```sh
+cp services/brain/.env.example services/brain/.env   # then add your key
+docker compose up --build
+```
+
+With no `.env` present the stack still starts, on the example file's non-secret defaults.
+
+**Pointing the frontend at a different BFF.** `VITE_BFF_URL` is baked into the web bundle at *image build time* and defaults to `http://localhost:3000`. Override it without editing any file:
+
+```sh
+VITE_BFF_URL=http://192.168.1.50:3000 docker compose up --build
+```
+
+It must be an address the **browser** can resolve. A compose-internal name like `http://bff:3000` resolves only inside the Docker network and will fail from the host. Because the value is baked in at build time, changing it requires a rebuild, not just a restart.
 
 ## Individual services
 
